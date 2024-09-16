@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoonLoader } from 'react-spinners';
+
 import {
   AreaChart,
   Area,
