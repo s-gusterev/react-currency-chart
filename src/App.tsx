@@ -1,8 +1,5 @@
-import './App.css';
 import { useState, useEffect } from 'react';
 import { lazy, Suspense } from 'react';
-
-// import CustomAreaChart from './components/CustomAreaChart';
 
 import { MoonLoader } from 'react-spinners';
 
@@ -39,7 +36,6 @@ function App() {
   const {
     data: Valutes,
     isSuccess,
-    // isLoading,
     isFetching,
   } = useGetValutesQuery({
     charCode: 'USD',
@@ -87,8 +83,6 @@ function App() {
       </div>
     );
   }
-
-  console.log(isFetching);
 
   return (
     <div className="container mx-auto h-screen relative flex flex-col items-center justify-center">
