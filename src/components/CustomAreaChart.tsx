@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { MoonLoader } from 'react-spinners';
 import {
   AreaChart,
@@ -37,61 +37,76 @@ const CustomAreaChart = ({
     null,
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleMouseMove = (e: any) => {
-    if (e && e.chartX !== undefined && e.chartY !== undefined) {
-      setTooltipPos({ x: e.chartX, y: e.chartY });
-    } else {
-      setTooltipPos(null);
-    }
-  };
-
-  const payloadData = data.map((item) => ({
-    value: item.value,
-    payload: {
-      previousValue: item.previousValue,
-      date: item.date,
-      index: item.index,
-      value: item.value,
+  const handleMouseMove = useCallback(
+    (e: { chartX?: number; chartY?: number }) => {
+      if (e?.chartX !== undefined && e?.chartY !== undefined) {
+        setTooltipPos({ x: e.chartX, y: e.chartY });
+      } else {
+        setTooltipPos(null);
+      }
     },
-  }));
+    [],
+  );
 
-  const formatXAxis = (tickItem: string) => {
-    const monthName = format(tickItem, 'LLLL', { locale: ru });
-    return capitalizeFirstLetter(monthName);
-  };
+  const payloadData = useMemo(
+    () =>
+      data.map((item) => ({
+        value: item.value,
+        payload: {
+          previousValue: item.previousValue,
+          date: item.date,
+          index: item.index,
+          value: item.value,
+        },
+      })),
+    [data],
+  );
 
-  const formatXAxisYear = (tickItem: string) => {
-    const year = format(tickItem, 'yyyy', { locale: ru });
-    return capitalizeFirstLetter(year);
-  };
+  const formatXAxis = useCallback(
+    (tickItem: string, index: number) => {
+      const date = new Date(tickItem);
+      const monthName = capitalizeFirstLetter(
+        format(date, 'LLLL', { locale: ru }),
+      );
+      if (isFullYear) {
+        return format(date, 'yyyy', { locale: ru });
+      }
+      if (isCurrentMonth) {
+        return index === 0 ? monthName : format(tickItem, 'd', { locale: ru });
+      }
 
-  const filterXAxisTicks = (
-    tickItem: string,
-    index: number,
-    array: string[],
-  ) => {
-    return (
-      index === 0 || format(tickItem, 'M') !== format(array[index - 1], 'M')
-    );
-  };
+      return monthName;
+    },
+    [isFullYear, isCurrentMonth],
+  );
 
-  const formatXAxisMonth = (tickItem: string, index: number) => {
-    const monthName = format(tickItem, 'LLLL', { locale: ru });
+  const filterXAxisTicks = useCallback(
+    (tickItem: string, index: number, array: string[]) => {
+      return (
+        index === 0 ||
+        format(new Date(tickItem), 'M') !==
+          format(new Date(array[index - 1]), 'M')
+      );
+    },
+    [],
+  );
 
-    return index === 0
-      ? capitalizeFirstLetter(monthName)
-      : format(tickItem, 'd', { locale: ru });
-  };
+  const xTicks = useMemo(
+    () =>
+      isFullYear || isCurrentMonth
+        ? data.map((d) => d.date)
+        : data.map((d) => d.date).filter(filterXAxisTicks),
+    [data, isFullYear, isCurrentMonth, filterXAxisTicks],
+  );
 
   return (
     <ResponsiveContainer
       width="100%"
       height={240}
-      className="flex  justify-center"
+      className="flex justify-center"
     >
       {isFetching ? (
-        <div className="flex flex-col justify-center items-center gap-6 ">
+        <div className="flex flex-col justify-center items-center gap-6">
           <span className="text-white text-xs">Загрузка...</span>
           <MoonLoader color="#8979FF" size={20} />
         </div>
@@ -125,18 +140,8 @@ const CustomAreaChart = ({
             dataKey="date"
             axisLine={false}
             tickLine={false}
-            tickFormatter={
-              isFullYear
-                ? formatXAxisYear
-                : isCurrentMonth
-                ? formatXAxisMonth
-                : formatXAxis
-            }
-            ticks={
-              isFullYear || isCurrentMonth
-                ? data.map((d) => d.date)
-                : data.map((d) => d.date).filter(filterXAxisTicks)
-            }
+            tickFormatter={formatXAxis}
+            ticks={xTicks}
             tick={{
               fill: '#fff',
               fontSize: 12,
