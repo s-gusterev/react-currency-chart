@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { lazy, Suspense } from 'react';
 
 import { MoonLoader } from 'react-spinners';
@@ -46,35 +46,66 @@ function App() {
   const { data: getValutesAllYears, isSuccess: getValutesAllYearsSuccess } =
     useGetValutesAllYearsQuery();
 
-  const makeAverageValue = (valutes: IValutes[] | undefined) => {
-    if (valutes) {
-      const sum = valutes.reduce((acc, val) => acc + Number(val.value), 0);
-      setAverageValue(sum / valutes.length);
-    }
-  };
+  const makeAverageValue = useCallback(
+    (valutes: IValutes[] | undefined) => {
+      if (!valutes || valutes.length === 0) {
+        setAverageValue(0);
+        return;
+      }
 
-  const makePercentageChange = (valutes: IValutes[] | undefined) => {
-    if (valutes) {
-      const firstValue = valutes[0].value;
-      const lastValue = valutes[valutes.length - 1].value;
-      const percentageChange = ((+lastValue - +firstValue) / +firstValue) * 100;
+      const sum = valutes.reduce(
+        (acc, val) => acc + (parseFloat(val.value) || 0),
+        0,
+      );
+      const average = sum / valutes.length;
+
+      setAverageValue(average);
+    },
+    [setAverageValue],
+  );
+
+  const makePercentageChange = useCallback(
+    (valutes?: IValutes[]) => {
+      if (!valutes || valutes.length < 2) {
+        setPercentageChange(0);
+        return;
+      }
+
+      const firstValue = parseFloat(valutes[0].value);
+      const lastValue = parseFloat(valutes[valutes.length - 1].value);
+
+      if (isNaN(firstValue) || isNaN(lastValue) || firstValue === 0) {
+        setPercentageChange(0);
+        return;
+      }
+
+      const percentageChange = ((lastValue - firstValue) / firstValue) * 100;
       setPercentageChange(percentageChange);
-    }
-  };
+    },
+    [setPercentageChange],
+  );
+
+  const updateMetrics = useCallback(
+    (valutes: IValutes[] | undefined) => {
+      if (valutes) {
+        makeAverageValue(valutes);
+        makePercentageChange(valutes);
+      }
+    },
+    [makeAverageValue, makePercentageChange],
+  );
 
   useEffect(() => {
     if ((isCurrentMonth && !isFullYearData) || Valutes) {
-      makeAverageValue(Valutes);
-      makePercentageChange(Valutes);
+      updateMetrics(Valutes);
     }
-  }, [Valutes, isCurrentMonth, isFullYearData]);
+  }, [Valutes, isCurrentMonth, isFullYearData, updateMetrics]);
 
   useEffect(() => {
     if (isFullYearData) {
-      makeAverageValue(getValutesAllYears);
-      makePercentageChange(getValutesAllYears);
+      updateMetrics(getValutesAllYears);
     }
-  }, [getValutesAllYears, isFullYearData]);
+  }, [getValutesAllYears, isFullYearData, updateMetrics]);
 
   if (!Valutes) {
     return (
