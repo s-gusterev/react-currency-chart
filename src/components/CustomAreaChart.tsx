@@ -133,6 +133,7 @@ const CustomAreaChart = ({
           <CartesianGrid
             vertical={false}
             stroke="rgba(255, 255, 255, 0.35)"
+            strokeWidth="1"
             strokeDasharray="3"
           />
 
@@ -157,10 +158,14 @@ const CustomAreaChart = ({
               fontWeight: 600,
             }}
             tickFormatter={(value) => `${value}`}
-            tickCount={10}
+            tickCount={5}
           />
           <Tooltip
-            cursor={false}
+            cursor={{
+              stroke: 'rgba(255, 255, 255, 0.35)',
+              strokeWidth: 1,
+              strokeDasharray: '3',
+            }}
             content={
               <CustomTooltip
                 position={tooltipPos}
@@ -169,7 +174,6 @@ const CustomAreaChart = ({
                 data={data}
               />
             }
-            isAnimationActive={true}
           />
 
           <Area
@@ -179,7 +183,11 @@ const CustomAreaChart = ({
             strokeWidth="1"
             fill="url(#paint0_linear_0_11349)"
             dot={{ fill: '#4379EE', stroke: '#4379EE', r: 0, fillOpacity: 1 }}
-            activeDot={{ fill: '#4880ff', stroke: '#4880ff', r: 0 }}
+            activeDot={{
+              fill: '#8B5CF6',
+              stroke: '#8B5CF6',
+              r: 1,
+            }}
           />
         </AreaChart>
       )}

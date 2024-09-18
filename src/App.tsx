@@ -8,6 +8,8 @@ import {
 } from 'react';
 import { MoonLoader } from 'react-spinners';
 
+import CustomSelect from './components/CustomSelect';
+
 import {
   useGetValutesQuery,
   useGetValutesAllYearsQuery,
@@ -15,6 +17,7 @@ import {
 } from './utils/api';
 import createYearList from './utils/createYearList';
 import { format } from 'date-fns';
+import { SelectChangeEvent } from '@mui/material/Select';
 
 const CustomAreaChartLazy = lazy(() => import('./components/CustomAreaChart'));
 
@@ -32,6 +35,8 @@ function App() {
     isFullYearData: false,
     isCurrentMonth: false,
     activeYear: currentYear.toString(),
+    isSelectOpen: false,
+    selectYear: currentYear.toString(),
   });
 
   const {
@@ -87,15 +92,30 @@ function App() {
     [makeAverageValue, makePercentageChange],
   );
 
-  const handleYearClick = useCallback((year: string) => {
-    setDateRange({
-      startDate: `${year}-01-01`,
-      endDate: `${year}-12-31`,
+  const handleChangeYears = (event: SelectChangeEvent) => {
+    setDateRange((prevState) => ({
+      ...prevState,
+      startDate: `${event.target.value}-01-01`,
+      endDate: `${event.target.value}-12-31`,
       isFullYearData: false,
       isCurrentMonth: false,
-      activeYear: year,
-    });
-  }, []);
+      selectYear: event.target.value,
+    }));
+  };
+
+  const handleSelectOpen = () => {
+    setDateRange((prevState) => ({
+      ...prevState,
+      isSelectOpen: true,
+    }));
+  };
+
+  const handleSelectClose = () => {
+    setDateRange((prevState) => ({
+      ...prevState,
+      isSelectOpen: false,
+    }));
+  };
 
   const handleAllTimeClick = useCallback(() => {
     setDateRange((prevState) => ({
@@ -106,14 +126,17 @@ function App() {
   }, []);
 
   const handleCurrentMonthClick = useCallback(() => {
-    setDateRange({
+    setDateRange((prevState) => ({
+      ...prevState,
       startDate: `${currentYear}-0${currentMonth + 1}-01`,
       endDate: currentDay,
       isFullYearData: false,
       isCurrentMonth: true,
       activeYear: currentYear.toString(),
-    });
+    }));
   }, [currentYear, currentMonth, currentDay]);
+
+  console.log(dateRange);
 
   useEffect(() => {
     if ((dateRange.isCurrentMonth && !dateRange.isFullYearData) || Valutes) {
@@ -136,7 +159,7 @@ function App() {
   }
 
   return (
-    <div className="container mx-auto h-screen relative flex flex-col items-center justify-center">
+    <div className="container mx-auto h-screen relative flex flex-col items-center justify-center ">
       <div className="mb-4 text-white">
         Средний курс валюты: 1$ = {averageValue.toFixed(2)}
       </div>
@@ -162,41 +185,34 @@ function App() {
       )}
 
       <div className="flex justify-center gap-3 flex-wrap mt-7">
-        {years.map((year) => (
-          <button
-            key={year}
-            className={`${
-              dateRange.activeYear === year &&
-              !dateRange.isFullYearData &&
-              !dateRange.isCurrentMonth
-                ? 'bg-blue-500 cursor-default'
-                : 'bg-violet-500 hover:bg-blue-500'
-            } text-white font-bold py-2 px-4 rounded`}
-            onClick={() => handleYearClick(year)}
-          >
-            {year}
-          </button>
-        ))}
-
+        <CustomSelect
+          value={dateRange.selectYear}
+          onChange={handleChangeYears}
+          selectValues={years}
+          onOpen={handleSelectOpen}
+          onClose={handleSelectClose}
+        />
         <button
           className={`${
-            dateRange.isFullYearData
-              ? 'bg-pink-600 cursor-default'
-              : 'bg-violet-500 hover:bg-pink-600'
-          } text-white font-bold py-2 px-4 rounded`}
-          onClick={handleAllTimeClick}
-        >
-          За все время
-        </button>
-        <button
-          className={`${
-            dateRange.isCurrentMonth && !dateRange.isFullYearData
+            dateRange.isCurrentMonth &&
+            !dateRange.isFullYearData &&
+            !dateRange.isSelectOpen
               ? 'bg-fuchsia-700 cursor-default'
               : 'bg-violet-500 hover:bg-fuchsia-700'
-          } text-white font-bold py-2 px-4 rounded`}
+          } text-white font-bold py-2 px-4 rounded transition-colors  duration-300`}
           onClick={handleCurrentMonthClick}
         >
           Текущий месяц
+        </button>
+        <button
+          className={`${
+            dateRange.isFullYearData && !dateRange.isSelectOpen
+              ? 'bg-pink-600 cursor-default'
+              : 'bg-violet-500 hover:bg-pink-600'
+          } text-white font-bold py-2 px-4 rounded transition-colors duration-300`}
+          onClick={handleAllTimeClick}
+        >
+          За все время
         </button>
       </div>
     </div>
